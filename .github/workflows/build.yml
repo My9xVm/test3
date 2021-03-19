@@ -1,0 +1,39 @@
+name: Build
+on:
+  push:
+    paths:
+      - 'pkgs/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - name: Cache files
+        uses: actions/cache@v2
+        with:
+          key: cache
+          path: |
+            ~/cache
+          restore-keys: |
+            cache
+      - name: Install packages
+        run: |
+          sudo apt install -y lzip
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/ar ar /usr/bin/gcc-ar-10 --slave /usr/bin/g++ g++ /usr/bin/g++-10 --slave /usr/bin/gcov gcov /usr/bin/gcov-10 --slave /usr/bin/ranlib ranlib /usr/bin/gcc-ranlib-10 --slave /usr/bin/nm nm /usr/bin/gcc-nm-10
+      - name: Print information
+        run: |
+          . runcommand/set_environment_variables.sh
+          . runcommand/get_information.sh
+          $CC $CFLAGS -ffile-prefix-map=$(pwd)= $CPPFLAGS $LDFLAGS fibon.c
+          lzip --match-length=273 --dictionary-size=26 -v ./a.out
+      - name: Archive files
+        uses: actions/upload-artifact@v2
+        with:
+          name: archive
+          path: |
+            ~/output
+          retention-days: 3
